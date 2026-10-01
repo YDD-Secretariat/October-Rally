@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import fs from "node:fs/promises";
 import path from "node:path";
+import { put } from "@vercel/blob";
 import { eq, sql } from "drizzle-orm";
 import { db, UPLOADS_DIR } from "@/db";
 import { photos, schools } from "@/db/schema";
@@ -32,21 +33,30 @@ async function storePhoto(body: any): Promise<HandlerResult> {
   const schoolId = body.schoolId != null ? parseInt(body.schoolId) : null;
   const schoolName = String(body.schoolName || "").trim();
   const safeName = `${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`;
-  const storedPath = path.join(UPLOADS_DIR, safeName);
-  await fs.writeFile(storedPath, buffer);
 
-  db.insert(photos)
-    .values({
-      schoolId: Number.isFinite(schoolId) ? schoolId : null,
-      schoolName,
-      fileName: String(body.fileName || safeName),
-      storedPath,
-      station: String(body.station || "").trim(),
-    })
-    .run();
+  // Vercel Blob in the cloud; local disk when BLOB_READ_WRITE_TOKEN isn't set.
+  let storedPath: string;
+  if (process.env.BLOB_READ_WRITE_TOKEN) {
+    const blob = await put(`sheets/${safeName}`, buffer, {
+      access: "public",
+      contentType: "image/jpeg",
+    });
+    storedPath = blob.url;
+  } else {
+    storedPath = path.join(UPLOADS_DIR, safeName);
+    await fs.writeFile(storedPath, buffer);
+  }
+
+  await db.insert(photos).values({
+    schoolId: Number.isFinite(schoolId) ? schoolId : null,
+    schoolName,
+    fileName: String(body.fileName || safeName),
+    storedPath,
+    station: String(body.station || "").trim(),
+  }).run();
 
   if (Number.isFinite(schoolId)) {
-    db.update(schools)
+    await db.update(schools)
       .set({ photoCount: sql`${schools.photoCount} + 1` })
       .where(eq(schools.id, schoolId as number))
       .run();

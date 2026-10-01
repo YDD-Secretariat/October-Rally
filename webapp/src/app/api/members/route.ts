@@ -12,7 +12,7 @@ export async function POST(req: Request) {
   return withIdempotency(body.clientRequestId, () => registerMembers(body));
 }
 
-function registerMembers(body: any): HandlerResult {
+async function registerMembers(body: any): Promise<HandlerResult> {
   const groupName = String(body.group || "").trim();
   if (!MEMBER_GROUPS.includes(groupName as (typeof MEMBER_GROUPS)[number])) {
     return { status: 400, body: { success: false, error: "Select a valid group." } };
@@ -24,7 +24,7 @@ function registerMembers(body: any): HandlerResult {
     return { status: 400, body: { success: false, error: "Enter at least one member." } };
   }
 
-  db.insert(bulkMembers)
+  await db.insert(bulkMembers)
     .values({
       groupName,
       male,

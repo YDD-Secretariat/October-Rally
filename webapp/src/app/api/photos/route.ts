@@ -11,7 +11,7 @@ export async function GET(req: Request) {
   if (!Number.isFinite(schoolId)) {
     return NextResponse.json({ photos: [] });
   }
-  const rows = db
+  const rows = await db
     .select({ id: photos.id, fileName: photos.fileName, createdAt: photos.createdAt })
     .from(photos)
     .where(eq(photos.schoolId, schoolId))

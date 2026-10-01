@@ -25,11 +25,11 @@ function sum<T extends object>(rows: readonly T[], key: keyof T): number {
   return rows.reduce((acc, r) => acc + Number((r[key] as unknown) ?? 0), 0);
 }
 
-export function getSchoolRows(): SchoolRow[] {
-  return db.select().from(schools).orderBy(desc(schools.createdAt)).all() as SchoolRow[];
+export async function getSchoolRows(): Promise<SchoolRow[]> {
+  return (await db.select().from(schools).orderBy(desc(schools.createdAt)).all()) as SchoolRow[];
 }
 
-export function getSchoolStats(rows = getSchoolRows()): SchoolStats {
+export function getSchoolStats(rows: SchoolRow[]): SchoolStats {
   return {
     totalStudents: sum(rows, "total"),
     totalSchools: rows.length,
@@ -38,8 +38,8 @@ export function getSchoolStats(rows = getSchoolRows()): SchoolStats {
   };
 }
 
-export function getBulkStats(): BulkStats {
-  const rows = db.select().from(bulkMembers).all();
+export async function getBulkStats(): Promise<BulkStats> {
+  const rows = await db.select().from(bulkMembers).all();
   const groups = MEMBER_GROUPS.map((name) => {
     const matching = rows.filter((r) => r.groupName === name);
     return {
@@ -58,9 +58,9 @@ export function getBulkStats(): BulkStats {
   };
 }
 
-export function getWorkerStats(): WorkerStats {
-  const bulkRows = db.select().from(workerBulk).all();
-  const individualRows = db.select().from(workerRegistrations).all();
+export async function getWorkerStats(): Promise<WorkerStats> {
+  const bulkRows = await db.select().from(workerBulk).all();
+  const individualRows = await db.select().from(workerRegistrations).all();
   const bulkTotal = sum(bulkRows, "total");
   const individualTotal = individualRows.length;
   return {
@@ -72,8 +72,8 @@ export function getWorkerStats(): WorkerStats {
   };
 }
 
-export function getVisitorStats(): VisitorStats {
-  const rows = db.select().from(visitors).orderBy(desc(visitors.createdAt)).all();
+export async function getVisitorStats(): Promise<VisitorStats> {
+  const rows = await db.select().from(visitors).orderBy(desc(visitors.createdAt)).all();
   return {
     totalVisitors: sum(rows, "total"),
     totalMale: sum(rows, "male"),
@@ -105,10 +105,8 @@ export function buildSummary(
 
   // Individual worker registrations have no gender split, so gender totals use
   // the gendered sources: schools, bulk members, worker bulk, and visitors.
-  const totalMale =
-    stats.totalMale + bulk.totalMale + workers.bulkMale + vis.totalMale;
-  const totalFemale =
-    stats.totalFemale + bulk.totalFemale + workers.bulkFemale + vis.totalFemale;
+  const totalMale = stats.totalMale + bulk.totalMale + workers.bulkMale + vis.totalMale;
+  const totalFemale = stats.totalFemale + bulk.totalFemale + workers.bulkFemale + vis.totalFemale;
 
   return {
     studentTotal,
@@ -125,12 +123,10 @@ export function buildSummary(
 }
 
 /** Single-pass dashboard payload — replaces six separate network round trips. */
-export function getDashboard(): DashboardPayload {
-  const schoolRows = getSchoolRows();
+export async function getDashboard(): Promise<DashboardPayload> {
+  const schoolRows = await getSchoolRows();
+  const [bulk, workers, vis] = await Promise.all([getBulkStats(), getWorkerStats(), getVisitorStats()]);
   const stats = getSchoolStats(schoolRows);
-  const bulk = getBulkStats();
-  const workers = getWorkerStats();
-  const vis = getVisitorStats();
   const summary = buildSummary(stats, bulk, workers, vis, schoolRows);
   return {
     stats,
@@ -143,34 +139,28 @@ export function getDashboard(): DashboardPayload {
   };
 }
 
-export function getSummary(): Summary {
-  const schoolRows = getSchoolRows();
-  return buildSummary(
-    getSchoolStats(schoolRows),
-    getBulkStats(),
-    getWorkerStats(),
-    getVisitorStats(),
-    schoolRows,
-  );
+export async function getSummary(): Promise<Summary> {
+  const schoolRows = await getSchoolRows();
+  const [bulk, workers, vis] = await Promise.all([getBulkStats(), getWorkerStats(), getVisitorStats()]);
+  return buildSummary(getSchoolStats(schoolRows), bulk, workers, vis, schoolRows);
 }
 
 /** Roster search for individual worker/minister registration. */
-export function searchRoster(query: string): RosterMatch[] {
+export async function searchRoster(query: string): Promise<RosterMatch[]> {
   const q = query.trim();
   if (q.length < 2) return [];
-  const rosterRows = db
+  const rosterRows = await db
     .select()
     .from(workerRoster)
     .where(like(workerRoster.fullName, `%${q}%`))
     .limit(20)
     .all();
+  const regRows = await db
+    .select({ rosterId: workerRegistrations.rosterId })
+    .from(workerRegistrations)
+    .all();
   const registered = new Set(
-    db
-      .select({ rosterId: workerRegistrations.rosterId })
-      .from(workerRegistrations)
-      .all()
-      .map((r) => r.rosterId)
-      .filter((x): x is number => x != null),
+    regRows.map((r) => r.rosterId).filter((x): x is number => x != null),
   );
   return rosterRows.map((r) => ({
     rowId: r.id,

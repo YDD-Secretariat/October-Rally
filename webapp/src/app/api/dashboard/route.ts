@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    return NextResponse.json(getDashboard());
+    return NextResponse.json(await getDashboard());
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Failed to load dashboard" },

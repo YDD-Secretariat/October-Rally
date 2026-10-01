@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 const DUPLICATE_THRESHOLD = 80;
 
 export async function GET() {
-  return NextResponse.json({ schools: getSchoolRows() });
+  return NextResponse.json({ schools: await getSchoolRows() });
 }
 
 export async function POST(req: Request) {
@@ -20,7 +20,7 @@ export async function POST(req: Request) {
   return withIdempotency(body.clientRequestId, () => registerSchool(body));
 }
 
-function registerSchool(body: any): HandlerResult {
+async function registerSchool(body: any): Promise<HandlerResult> {
   const schoolName = String(body.schoolName || "").trim();
   if (!schoolName) {
     return { status: 400, body: { success: false, error: "School name is required." } };
@@ -32,7 +32,7 @@ function registerSchool(body: any): HandlerResult {
 
   // Fuzzy duplicate guard unless the desk confirmed it's different.
   if (!body.confirmedNotDuplicate) {
-    const existing = db.select().from(schools).all();
+    const existing = await db.select().from(schools).all();
     const matches: DuplicateMatch[] = existing
       .map((s) => ({
         schoolName: s.schoolName,
@@ -53,7 +53,7 @@ function registerSchool(body: any): HandlerResult {
     }
   }
 
-  const inserted = db
+  const inserted = await db
     .insert(schools)
     .values({
       schoolName,

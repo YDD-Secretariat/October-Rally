@@ -3,7 +3,7 @@
  * search has names to match. Run with `npm run db:seed`. Safe to re-run — it
  * only inserts when the roster is empty.
  */
-import { db } from "./index";
+import { db, ensureSchema } from "./index";
 import { workerRoster } from "./schema";
 
 const ROSTER: Array<{ fullName: string; phone?: string; station?: string; details?: string }> = [
@@ -17,11 +17,18 @@ const ROSTER: Array<{ fullName: string; phone?: string; station?: string; detail
   { fullName: "John Abiodun", phone: "08030000008", station: "Anthony Group 4", details: "Media" },
 ];
 
-// better-sqlite3 driver runs queries synchronously.
-const existing = db.select().from(workerRoster).all();
-if (existing.length > 0) {
-  console.log(`Roster already has ${existing.length} entries — skipping seed.`);
-} else {
-  db.insert(workerRoster).values(ROSTER).run();
-  console.log(`Seeded ${ROSTER.length} roster entries.`);
+async function main() {
+  await ensureSchema();
+  const existing = await db.select().from(workerRoster).all();
+  if (existing.length > 0) {
+    console.log(`Roster already has ${existing.length} entries — skipping seed.`);
+  } else {
+    await db.insert(workerRoster).values(ROSTER).run();
+    console.log(`Seeded ${ROSTER.length} roster entries.`);
+  }
 }
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

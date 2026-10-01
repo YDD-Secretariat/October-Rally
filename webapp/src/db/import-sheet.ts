@@ -11,7 +11,7 @@
  * Individual worker registrations are NOT migrated — the legacy backend exposes
  * no endpoint that lists them (and in the current sheet there are 0 of them).
  */
-import { db } from "./index";
+import { db, ensureSchema } from "./index";
 import { bulkMembers, schools, visitors, workerBulk } from "./schema";
 
 const URL_BASE =
@@ -42,11 +42,12 @@ async function fetchAction(action: string): Promise<any> {
 }
 
 async function main() {
+  await ensureSchema();
   const existing =
-    db.select().from(schools).all().length +
-    db.select().from(bulkMembers).all().length +
-    db.select().from(visitors).all().length +
-    db.select().from(workerBulk).all().length;
+    (await db.select().from(schools).all()).length +
+    (await db.select().from(bulkMembers).all()).length +
+    (await db.select().from(visitors).all()).length +
+    (await db.select().from(workerBulk).all()).length;
 
   if (existing > 0 && !FORCE) {
     console.error(
@@ -110,17 +111,17 @@ async function main() {
     workerRows.push({ male: 0, female: 0, total: int(wm.individualTotal), submittedBy: "import (individuals)" });
   }
 
-  db.transaction((tx) => {
+  await db.transaction(async (tx) => {
     if (FORCE) {
-      tx.delete(schools).run();
-      tx.delete(bulkMembers).run();
-      tx.delete(visitors).run();
-      tx.delete(workerBulk).run();
+      await tx.delete(schools).run();
+      await tx.delete(bulkMembers).run();
+      await tx.delete(visitors).run();
+      await tx.delete(workerBulk).run();
     }
-    if (schoolRows.length) tx.insert(schools).values(schoolRows).run();
-    if (groupRows.length) tx.insert(bulkMembers).values(groupRows).run();
-    if (visitorRows.length) tx.insert(visitors).values(visitorRows).run();
-    if (workerRows.length) tx.insert(workerBulk).values(workerRows).run();
+    if (schoolRows.length) await tx.insert(schools).values(schoolRows).run();
+    if (groupRows.length) await tx.insert(bulkMembers).values(groupRows).run();
+    if (visitorRows.length) await tx.insert(visitors).values(visitorRows).run();
+    if (workerRows.length) await tx.insert(workerBulk).values(workerRows).run();
   });
 
   const students = schoolRows.reduce((a: number, s: any) => a + s.total, 0);

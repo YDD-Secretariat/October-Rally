@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    return NextResponse.json(getSummary());
+    return NextResponse.json(await getSummary());
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Failed to load summary" },

@@ -13,7 +13,7 @@ export async function POST(req: Request) {
   return withIdempotency(body.clientRequestId, () => registerWorker(body));
 }
 
-function registerWorker(body: any): HandlerResult {
+async function registerWorker(body: any): Promise<HandlerResult> {
   const group = String(body.group || "").trim();
   const phone = String(body.phone || "").replace(/\D/g, "");
   const submittedBy = String(body.submittedBy || body.station || "").trim();
@@ -31,11 +31,11 @@ function registerWorker(body: any): HandlerResult {
 
   if (!isWalkIn) {
     const rosterId_ = parseInt(body.rowId);
-    const person = db.select().from(workerRoster).where(eq(workerRoster.id, rosterId_)).get();
+    const person = await db.select().from(workerRoster).where(eq(workerRoster.id, rosterId_)).get();
     if (!person) {
       return { status: 404, body: { success: false, error: "Roster entry not found." } };
     }
-    const already = db
+    const already = await db
       .select()
       .from(workerRegistrations)
       .where(eq(workerRegistrations.rosterId, rosterId_))
@@ -51,7 +51,7 @@ function registerWorker(body: any): HandlerResult {
     return { status: 400, body: { success: false, error: "Enter a full name." } };
   }
 
-  db.insert(workerRegistrations)
+  await db.insert(workerRegistrations)
     .values({
       rosterId,
       fullName,

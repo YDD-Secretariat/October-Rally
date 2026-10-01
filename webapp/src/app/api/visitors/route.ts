@@ -11,7 +11,7 @@ export async function POST(req: Request) {
   return withIdempotency(body.clientRequestId, () => registerVisitors(body));
 }
 
-function registerVisitors(body: any): HandlerResult {
+async function registerVisitors(body: any): Promise<HandlerResult> {
   const male = Math.max(0, parseInt(body.male) || 0);
   const female = Math.max(0, parseInt(body.female) || 0);
   const total = male + female;
@@ -19,7 +19,7 @@ function registerVisitors(body: any): HandlerResult {
     return { status: 400, body: { success: false, error: "Enter at least one visitor." } };
   }
 
-  db.insert(visitors)
+  await db.insert(visitors)
     .values({
       category: String(body.category || "Visitors").trim(),
       male,

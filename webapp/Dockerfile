@@ -1,10 +1,11 @@
-# October Rally 2026 — production image.
-# A long-running Node server with SQLite on a mounted volume.
+# October Rally 2026 — production image (local SQLite file on a mounted volume).
+# For the serverless path, set TURSO_* + BLOB_READ_WRITE_TOKEN instead and deploy
+# to Vercel — no container needed.
 FROM node:22-bookworm-slim
 
 WORKDIR /app
 
-# Build toolchain for better-sqlite3 (used only if a prebuilt binary is missing).
+# Toolchain in case any native dep (e.g. libSQL bindings) needs to compile.
 RUN apt-get update \
   && apt-get install -y --no-install-recommends python3 make g++ ca-certificates \
   && rm -rf /var/lib/apt/lists/*

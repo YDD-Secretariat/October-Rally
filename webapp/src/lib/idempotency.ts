@@ -22,7 +22,7 @@ export async function withIdempotency(
   const k = typeof key === "string" && key.length > 0 && key.length <= 200 ? key : null;
 
   if (k) {
-    const prior = db.select().from(idempotencyKeys).where(eq(idempotencyKeys.key, k)).get();
+    const prior = await db.select().from(idempotencyKeys).where(eq(idempotencyKeys.key, k)).get();
     if (prior) {
       try {
         return NextResponse.json(JSON.parse(prior.response));
@@ -36,7 +36,7 @@ export async function withIdempotency(
 
   if (k && status < 300 && body?.success === true) {
     try {
-      db.insert(idempotencyKeys).values({ key: k, response: JSON.stringify(body) }).run();
+      await db.insert(idempotencyKeys).values({ key: k, response: JSON.stringify(body) }).run();
     } catch {
       /* unique conflict from a concurrent duplicate — safe to ignore */
     }

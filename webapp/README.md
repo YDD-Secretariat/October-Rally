@@ -1,9 +1,10 @@
 # October Rally 2026 — Web App
 
 A full-stack rewrite of the October Rally registration + attendance system as a
-**Next.js (App Router) + TypeScript** application backed by a local **SQLite**
-database. It replaces the original static HTML pages that talked to a Google
-Apps Script endpoint.
+**Next.js (App Router) + TypeScript** application backed by **SQLite (libSQL)** —
+a local file in development, and **Turso** in production, so it runs on serverless
+hosts like **Vercel**. It replaces the original static HTML pages that talked to a
+Google Apps Script endpoint.
 
 ## Why this exists
 
@@ -18,7 +19,9 @@ the data actually changes.
 ## Stack
 
 - **Next.js 15** (App Router) + **React 19** + **TypeScript**
-- **SQLite** via `better-sqlite3`, typed with **Drizzle ORM**
+- **SQLite / libSQL** via `@libsql/client`, typed with **Drizzle ORM** — a local
+  file in dev, **Turso** (hosted libSQL) in production
+- Photo uploads to the local disk in dev, **Vercel Blob** in production
 - **Tailwind CSS** + **lucide-react** icons (no emoji UI)
 
 ## Running it
@@ -43,28 +46,28 @@ npm run build
 npm start        # http://localhost:3100
 ```
 
-> **Hosting — read this first.** This is a **server** app with a SQLite database,
-> so it **cannot run on GitHub Pages / Vercel / Netlify** (static or serverless —
-> no persistent disk). Deploy it to a host that gives you a long-running Node
-> process **and a persistent volume**: a VM (DigitalOcean/EC2/Hetzner), or a
-> container platform with a mounted disk (Render, Railway, Fly.io). Put HTTPS in
-> front (the host's TLS, or Caddy/nginx). The DB, uploads, and backups live under
-> the directory named by `RALLY_DATA_DIR` (default `./data`) — that path must be
-> on the persistent volume and must survive redeploys.
-
 ### Deploying
 
-Two ready-made paths (both validated):
+**A. Vercel + Turso (recommended — fully serverless).**
 
-**A. Render (one blueprint).** [`render.yaml`](render.yaml) defines a web service
-with a 1 GB persistent disk at `/data`. In Render: **New → Blueprint → pick this
-repo**. It generates `RALLY_AUTH_SECRET` for you; set `RALLY_PASSCODE` in the
-dashboard. (A persistent disk needs a paid instance type — the free tier has
-none.) Railway/Fly.io are similar: root dir `webapp`, build `npm ci && npm run
-build`, start `npm start`, attach a volume mounted where `RALLY_DATA_DIR` points.
+1. Create a Turso database and an auth token:
+   ```bash
+   turso db create october-rally
+   turso db show october-rally --url          # → TURSO_DATABASE_URL
+   turso db tokens create october-rally       # → TURSO_AUTH_TOKEN
+   ```
+2. Import this repo into Vercel (root directory: `webapp`). Add a **Blob store**
+   to the project (Storage → Blob) — it injects `BLOB_READ_WRITE_TOKEN`.
+3. Set env vars in Vercel: `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`,
+   `RALLY_PASSCODE`, and `RALLY_AUTH_SECRET` (a long random string). Deploy.
 
-**B. Docker (any VM).** [`Dockerfile`](Dockerfile) builds the app; run it with a
-mounted volume and your env:
+The schema is created automatically on first boot. Turso handles durability and
+backups; Vercel Blob stores the photos. No persistent disk or always-on process
+required.
+
+**B. Docker, any VM (persistent disk, no external services).**
+[`Dockerfile`](Dockerfile) runs the app with a local SQLite file and disk uploads
+on a mounted volume — no Turso/Blob needed:
 
 ```bash
 docker build -t october-rally ./webapp
@@ -75,9 +78,13 @@ docker run -d --name october-rally -p 80:3100 \
   october-rally
 ```
 
-The container honours the platform's `$PORT` and stores all data on the `/data`
-volume (DB, uploads, rotating backups) — verified to survive container restarts.
-Terminate TLS with the host's load balancer or a reverse proxy in front.
+It honours the platform's `$PORT` and stores the DB + uploads on `/data` (verified
+to survive restarts). [`render.yaml`](render.yaml) is the same idea as a Render
+Blueprint with a 1 GB disk. For a VM, back the `/data` volume up on a schedule
+(libSQL files work with Litestream). Put HTTPS in front either way.
+
+> GitHub Pages / plain static hosts still can't run this (it needs a Node
+> server) — but with option A it's fully serverless on Vercel.
 
 ### Environment variables
 
@@ -87,9 +94,9 @@ Copy `.env.example` → `.env.local` (dev) or set these in your host:
 |----------|---------|
 | `RALLY_PASSCODE` | Shared passcode to access the app. **Set it in production** — when set, the whole app is gated behind a login. Unset = no auth (dev/test). |
 | `RALLY_AUTH_SECRET` | Random string used to sign the auth cookie. Set a distinct value in production. |
-| `RALLY_DATA_DIR` | Where the DB, uploads, and backups live (must be persistent). Default `./data`. |
-| `RALLY_BACKUP_MINUTES` | Auto-backup interval. Default 15 in production, off in dev. |
-| `RALLY_BACKUP_KEEP` | How many rotating backups to retain. Default 48. |
+| `TURSO_DATABASE_URL` / `TURSO_AUTH_TOKEN` | Turso (hosted libSQL) connection. Set both for Vercel/serverless. Unset = local SQLite file. |
+| `BLOB_READ_WRITE_TOKEN` | Vercel Blob token for photo storage (auto-set on Vercel). Unset = photos saved to local disk. |
+| `RALLY_DATA_DIR` | Local-file DB + uploads location (dev / Docker only; ignored when Turso is set). Default `./data`. |
 
 ## Migrating existing data from the Google Sheet
 
@@ -110,20 +117,20 @@ numbers.
 
 ## Attendance-sheet photos
 
-Uploaded sheets are stored on the data volume and viewable from the dashboard:
-open a school in the **Schools Registered** table and its photos appear as
-thumbnails in the detail panel (click to open full size). Served by
-`GET /api/photos/:id` (auth-gated, path-guarded to the uploads directory).
+Uploaded sheets are stored in **Vercel Blob** (or the local disk in dev) and
+viewable from the dashboard: open a school in the **Schools Registered** table and
+its photos appear as thumbnails in the detail panel (click to open full size).
+Served by `GET /api/photos/:id`, which stays auth-gated by proxying the bytes
+(the underlying blob/disk URL is never exposed).
 
 ## Production hardening (built in)
 
 - **Idempotent writes** — each submission carries a `clientRequestId`; a retry
   (offline queue, or a lost response) replays the stored result instead of
   inserting again, so headcounts are never double-counted.
-- **Automatic backups** — a timestamped `VACUUM INTO` snapshot is written to
-  `data/backups/` on an interval and rotated (`RALLY_BACKUP_KEEP`). Run one by
-  hand with `npm run db:backup`. For off-box durability, also point the data
-  volume at a provider snapshot or add [Litestream](https://litestream.io).
+- **Durable storage** — in production the database is **Turso**, which provides
+  built-in replication and point-in-time restore. On the Docker/VM path (local
+  SQLite file), back the data volume up on a schedule (e.g. [Litestream](https://litestream.io)).
 - **Shared-passcode auth** — set `RALLY_PASSCODE` to require a login (httpOnly,
   signed cookie) for all pages and API routes. Lock button in the footer.
 - **Hardened misc** — SQLite `busy_timeout` for multi-process safety, and CSV

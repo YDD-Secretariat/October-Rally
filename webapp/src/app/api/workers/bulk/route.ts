@@ -11,7 +11,7 @@ export async function POST(req: Request) {
   return withIdempotency(body.clientRequestId, () => registerBulkWorkers(body));
 }
 
-function registerBulkWorkers(body: any): HandlerResult {
+async function registerBulkWorkers(body: any): Promise<HandlerResult> {
   if (!body.confirmedExcludesIndividuals) {
     return { status: 400, body: { success: false, error: "Confirm this count excludes individual registrations." } };
   }
@@ -22,7 +22,7 @@ function registerBulkWorkers(body: any): HandlerResult {
     return { status: 400, body: { success: false, error: "Enter at least one worker / minister." } };
   }
 
-  db.insert(workerBulk)
+  await db.insert(workerBulk)
     .values({
       male,
       female,
