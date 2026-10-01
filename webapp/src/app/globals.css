@@ -1,0 +1,69 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --page: #f7f7f5;
+  --surface: #ffffff;
+  --border: #ebebe8;
+  --text: #1a1a1a;
+  --muted: #6b6b66;
+  --accent: #1a1a1a;
+  --accent-weak: #f1f1ef;
+  --male: #2b7fc4;
+  --female: #d6336c;
+  --good: #22a05a;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    background: var(--page);
+    color: var(--text);
+  }
+  h1, h2, h3 {
+    letter-spacing: -0.01em;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl border border-[var(--border)] bg-[var(--surface)];
+  }
+  .input {
+    @apply w-full rounded-xl border border-[var(--border)] bg-white px-3.5 py-3 text-[15px]
+      text-[var(--text)] outline-none transition focus:border-[var(--text)] focus:ring-2 focus:ring-black/5;
+  }
+  .label {
+    @apply mb-1.5 block text-[13px] font-semibold text-[var(--muted)];
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold
+      transition disabled:cursor-not-allowed disabled:opacity-60;
+  }
+  .btn-primary {
+    @apply btn bg-[#1a1a1a] text-white hover:bg-black active:scale-[0.99];
+  }
+  .btn-ghost {
+    @apply btn border border-[var(--border)] bg-white text-[var(--text)] hover:bg-[var(--accent-weak)];
+  }
+  .btn-block {
+    @apply w-full py-3.5 text-base;
+  }
+  .chip {
+    @apply cursor-pointer select-none rounded-xl border border-[var(--border)] bg-white px-3 py-3
+      text-center text-sm font-semibold text-[var(--muted)] transition hover:border-[var(--text)];
+  }
+  .chip-active {
+    @apply border-[var(--text)] bg-[var(--accent-weak)] text-[var(--text)];
+  }
+  .pill {
+    @apply inline-flex items-center rounded-full bg-[var(--accent-weak)] px-2.5 py-1 text-[11px]
+      font-semibold uppercase tracking-wide text-[var(--muted)];
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}

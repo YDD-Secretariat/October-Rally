@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+webapp/node_modules/
+
+# Next.js build output
+.next/
+webapp/.next/
+webapp/.next-test/
+out/
+webapp/out/
+build/
+webapp/build/
+
+# Local data & SQLite DB
+data/
+webapp/data/
+*.db
+*.db-shm
+*.db-wal
+webapp/var/
+
+# TypeScript
+webapp/next-env.d.ts
+webapp/tsconfig.tsbuildinfo
+
+# Environment variables & secrets
+.env
+.env*.local
+webapp/.env
+webapp/.env*.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.claude/
+.vscode/
+.idea/
