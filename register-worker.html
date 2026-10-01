@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Register Workers / Ministers — October Rally</title>
+<style>
+  :root{--accent:#7c3aed;--accent-dark:#6d28d9;--danger:#dc2626;--ok:#16a34a;--bg:#f8fafc;--border:#e2e8f0;--card:#ffffff;--text:#0f172a;}
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    background:var(--bg);color:var(--text);
+    padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);}
+  header{position:sticky;top:0;background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;padding:14px 16px;
+    padding-top:calc(14px + env(safe-area-inset-top,0px));z-index:20;
+    display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 10px rgba(0,0,0,0.1);}
+  header a{color:#fff;text-decoration:none;font-size:0.85rem;opacity:0.95;font-weight:600;}
+  header h1{font-size:1.05rem;margin:0;display:flex;align-items:center;gap:6px;}
+  .type-badge{display:inline-block;background:rgba(255,255,255,.2);color:#fff;font-size:0.68rem;
+    font-weight:700;padding:2px 8px;border-radius:20px;margin-left:4px;letter-spacing:0.03em;}
+
+  .quick-nav{background:#ede9fe;border-bottom:1px solid #ddd6fe;padding:8px 16px;display:flex;gap:8px;
+    overflow-x:auto;white-space:nowrap;font-size:0.8rem;}
+  .quick-nav a{color:#6d28d9;text-decoration:none;font-weight:600;padding:4px 10px;border-radius:12px;background:#fff;}
+  .quick-nav a.active{background:#7c3aed;color:#fff;}
+
+  main{max-width:520px;margin:0 auto;padding:16px;padding-bottom:60px;}
+
+  .station-bar{background:#fff;border:1px solid var(--border);border-radius:12px;padding:10px 14px;
+    margin-bottom:16px;display:flex;gap:8px;align-items:center;box-shadow:0 1px 3px rgba(0,0,0,0.04);}
+  .station-bar input{flex:1;border:none;font-size:0.95rem;background:transparent;outline:none;}
+  .station-bar label{font-size:0.8rem;color:#64748b;white-space:nowrap;font-weight:600;}
+
+  .search-box{position:relative;margin-bottom:14px;}
+  .search-box input{width:100%;padding:15px 14px;border:1px solid var(--border);border-radius:12px;
+    font-size:1.05rem;background:#fff;}
+  .search-box input:focus{outline:2px solid var(--accent);border-color:transparent;}
+  .search-hint{color:#94a3b8;font-size:0.85rem;text-align:center;padding:10px 0;}
+
+  .results{display:flex;flex-direction:column;gap:8px;}
+  .result-item{background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px;
+    display:flex;justify-content:space-between;align-items:center;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,0.04);}
+  .result-item:active{background:#f5f3ff;}
+  .result-item.done{opacity:0.6;background:#f8fafc;}
+  .rmain .rn{font-weight:700;font-size:1rem;color:#0f172a;}
+  .rmain .rs{font-size:0.8rem;color:#64748b;margin-top:2px;}
+  .rmain .rp{font-size:0.75rem;color:#94a3b8;}
+  .badge{font-size:0.68rem;font-weight:700;padding:4px 9px;border-radius:20px;white-space:nowrap;}
+  .badge.new{background:#ede9fe;color:var(--accent);}
+  .badge.done{background:#dcfce7;color:#166534;}
+
+  .empty-hint{color:#94a3b8;font-size:0.85rem;text-align:center;padding:24px 0;}
+
+  /* Confirm bottom sheet */
+  .overlay{position:fixed;inset:0;background:rgba(15,23,42,.6);backdrop-filter:blur(4px);display:none;
+    align-items:flex-end;justify-content:center;z-index:50;}
+  .overlay.show{display:flex;}
+  .sheet{background:#fff;width:100%;max-width:520px;border-radius:18px 18px 0 0;padding:22px;}
+  .sheet h2{margin:0 0 4px;font-size:1.2rem;}
+  .sheet .station-line{color:#64748b;font-size:0.9rem;margin-bottom:14px;}
+  .detail-row{display:flex;justify-content:space-between;font-size:0.9rem;padding:8px 0;border-bottom:1px solid var(--border);}
+  .detail-row span:first-child{color:#64748b;}
+  .sheet-actions{display:flex;gap:10px;margin-top:16px;}
+  .sheet-actions button{flex:1;padding:15px;border:none;border-radius:12px;font-weight:700;font-size:1rem;cursor:pointer;}
+  .btn-secondary{background:#e2e8f0;color:#0f172a;}
+  .btn-confirm{background:var(--accent);color:#fff;}
+  .btn-confirm:disabled{opacity:0.6;}
+
+  .walkin-btn{width:100%;margin-top:18px;padding:15px;border:1.5px dashed var(--accent);border-radius:12px;
+    background:#faf5ff;color:var(--accent);font-weight:700;font-size:0.95rem;cursor:pointer;}
+  .form-field{margin-top:12px;}
+  .form-field label{display:block;font-size:0.8rem;color:#64748b;margin-bottom:4px;font-weight:600;}
+  .form-field input,.form-field select{width:100%;padding:13px;border:1px solid var(--border);border-radius:10px;
+    font-size:1rem;background:#fff;}
+  .toast{position:fixed;bottom:20px;left:16px;right:16px;max-width:488px;margin:0 auto;
+    padding:14px 16px;border-radius:12px;font-size:0.9rem;font-weight:600;text-align:center;
+    box-shadow:0 8px 24px rgba(0,0,0,.25);display:none;z-index:60;}
+  .toast.ok{background:#16a34a;color:#fff;display:block;}
+  .toast.err{background:#dc2626;color:#fff;display:block;}
+  .toast.warn{background:#f59e0b;color:#fff;display:block;}
+</style>
+</head>
+<body>
+<header>
+  <h1><span>🪪</span> Register Workers / Ministers <span class="type-badge">INDIVIDUAL</span></h1>
+  <a href="index.html">Home</a>
+</header>
+
+<div class="quick-nav">
+  <a href="register.html">Schools</a>
+  <a href="register-members.html">Members (Bulk)</a>
+  <a href="register-workers.html">Workers/Ministers (Bulk)</a>
+  <a href="register-worker.html" class="active">Workers/Ministers (Individual)</a>
+  <a href="register-visitor.html">Visitors</a>
+  <a href="upload.html">Uploads</a>
+  <a href="dashboard.html">Dashboard</a>
+</div>
+
+<main>
+<p style="padding:12px;background:#fff7ed;border-radius:10px;font-size:.88rem;line-height:1.5;">Workers / Ministers only. Do not register a person here if they are already included in a bulk count.</p>
+
+  <div class="station-bar">
+    <label for="station">Station / Desk:</label>
+    <input id="station" placeholder="e.g. Desk 2 – Sade" />
+  </div>
+
+  <div class="search-box">
+    <input id="searchInput" placeholder="🔍 Type name to search roster…" autofocus />
+  </div>
+
+  <div id="searchHint" class="search-hint">Start typing a name to search the roster.</div>
+  <div class="results" id="results"></div>
+
+  <button class="walkin-btn" id="walkinBtn">➕ Not on the roster? Add a new person</button>
+
+</main>
+
+<div class="overlay" id="overlay">
+  <div class="sheet" id="sheetContent"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="config.js"></script>
+<script>
+  const stationInput = document.getElementById('station');
+  stationInput.value = AVS.getStation();
+  stationInput.addEventListener('change', () => AVS.setStation(stationInput.value.trim()));
+
+  const searchInput = document.getElementById('searchInput');
+  const results = document.getElementById('results');
+  const searchHint = document.getElementById('searchHint');
+  let searchTimer = null;
+  let lastResults = [];
+
+  searchInput.addEventListener('input', () => {
+    clearTimeout(searchTimer);
+    const q = searchInput.value.trim();
+    if (q.length < 2) {
+      results.innerHTML = '';
+      searchHint.style.display = 'block';
+      searchHint.textContent = 'Start typing a name to search the roster.';
+      return;
+    }
+    searchHint.style.display = 'block';
+    searchHint.textContent = 'Searching…';
+    searchTimer = setTimeout(() => runSearch(q), 180);
+  });
+
+  async function runSearch(q) {
+    try {
+      const res = await AVS.get('searchWorkers', { q });
+      if (res.error) {
+        searchHint.style.display = 'block';
+        searchHint.textContent = '⚠️ ' + res.error;
+        results.innerHTML = '';
+        return;
+      }
+      lastResults = res.workers || [];
+      renderResults(lastResults);
+    } catch (e) {
+      searchHint.style.display = 'block';
+      searchHint.textContent = '⚠️ Search failed — check connection.';
+    }
+  }
+
+  function renderResults(workers) {
+    if (!workers.length) {
+      results.innerHTML = '';
+      searchHint.style.display = 'block';
+      searchHint.textContent = 'No matching person found in the roster.';
+      return;
+    }
+    searchHint.style.display = 'none';
+    results.innerHTML = workers.map((w, i) => `
+      <div class="result-item ${w.alreadyRegistered ? 'done' : ''}" data-idx="${i}">
+        <div class="rmain">
+          <div class="rn">${w.fullName}</div>
+          <div class="rs">${w.station || 'No station listed'}</div>
+          ${w.phone ? `<div class="rp">${w.phone}</div>` : ''}
+          ${(w.otherDetails && w.otherDetails.Details) ? `<div class="rp">${w.otherDetails.Details}</div>` : ''}
+        </div>
+        <div class="badge ${w.alreadyRegistered ? 'done' : 'new'}">
+          ${w.alreadyRegistered ? '✓ Registered' : 'Tap to register'}
+        </div>
+      </div>
+    `).join('');
+    [...results.querySelectorAll('.result-item')].forEach(el => {
+      el.addEventListener('click', () => openConfirm(workers[parseInt(el.dataset.idx)]));
+    });
+  }
+
+  const overlay = document.getElementById('overlay');
+  const sheetContent = document.getElementById('sheetContent');
+
+  const groupOptions = [
+    ['Group 1', 'Anthony Group 1'], ['Group 2', 'Anthony Group 2'],
+    ['Group 3', 'Anthony Group 3'], ['Group 4', 'Anthony Group 4'],
+    ['Others', 'Others / other locations']
+  ];
+  function escapeHtml(value) {
+    return String(value || '').replace(/[&<>"']/g, c =>
+      ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function suggestedGroup(station) {
+    const match = /^Anthony\s+Group\s+([1-4])$/i.exec(String(station || '').trim());
+    if (match) return 'Group ' + match[1];
+    if (/^Visitors?$/i.test(String(station || '').trim())) return 'Others';
+    return '';
+  }
+  function groupSelect(preferred) {
+    return `<select id="personGroup" required>
+      <option value="">Select a group…</option>
+      ${groupOptions.map(([value, label]) =>
+        `<option value="${value}" ${value === preferred ? 'selected' : ''}>${label}</option>`).join('')}
+    </select>`;
+  }
+  function openConfirm(worker) {
+    if (worker.alreadyRegistered) {
+      showToast(`${worker.fullName} was already registered.`, 'warn');
+      return;
+    }
+    openPersonForm(worker);
+  }
+  function openPersonForm(worker = null) {
+    const known = !!worker;
+    const name = known ? worker.fullName : searchInput.value.trim();
+    sheetContent.innerHTML = `
+      <h2>${known ? 'Register Worker / Minister' : 'Add a new person'}</h2>
+      <div class="station-line">${known ? 'Roster details are filled in. Complete or correct the missing fields.' : 'Enter the person’s details.'}</div>
+      <div class="form-field"><label for="personName">Full name</label>
+        <input id="personName" value="${escapeHtml(name)}" ${known ? 'readonly' : 'required'} placeholder="Full name" /></div>
+      <div class="form-field"><label for="personPhone">Phone number (required)</label>
+        <input id="personPhone" type="tel" inputmode="tel" value="${escapeHtml(known ? worker.phone : '')}" placeholder="08012345678" required /></div>
+      <div class="form-field"><label for="personGroup">Anthony group / category (required)</label>
+        ${groupSelect(known ? suggestedGroup(worker.station) : '')}</div>
+      ${known ? `<div class="station-line">Roster station: ${escapeHtml(worker.station || 'Not listed')}</div>` : ''}
+      <div class="sheet-actions">
+        <button class="btn-secondary" id="cancelPerson">Cancel</button>
+        <button class="btn-confirm" id="savePerson">Register</button>
+      </div>`;
+    overlay.classList.add('show');
+    document.getElementById('cancelPerson').onclick = () => overlay.classList.remove('show');
+    document.getElementById('savePerson').onclick = () => submitPerson(worker);
+    if (!document.getElementById('personPhone').value) document.getElementById('personPhone').focus();
+    else if (!document.getElementById('personGroup').value) document.getElementById('personGroup').focus();
+  }
+  document.getElementById('walkinBtn').addEventListener('click', () => openPersonForm());
+  async function submitPerson(worker) {
+    const name = document.getElementById('personName').value.trim();
+    const phone = document.getElementById('personPhone').value.replace(/\D/g, '');
+    const group = document.getElementById('personGroup').value;
+    if (name.length < 2) return showToast('Enter a full name.', 'err');
+    if (phone.length < 10) return showToast('Enter a valid phone number.', 'err');
+    if (!group) return showToast('Choose an Anthony group or Others.', 'err');
+    const btn = document.getElementById('savePerson');
+    btn.disabled = true; btn.textContent = 'Saving…';
+    try {
+      const payload = worker ? {
+        action: 'registerWorker', rowId: worker.rowId, phone, group,
+        submittedBy: stationInput.value.trim() || AVS.getStation()
+      } : {
+        action: 'registerWalkIn', name, phone, group, station: group,
+        submittedBy: stationInput.value.trim() || AVS.getStation()
+      };
+      const res = await AVS.post(payload);
+      if (res.success) {
+        overlay.classList.remove('show');
+        showToast(`✅ ${res.fullName || name} registered in ${group}.`, 'ok');
+        if (worker) { worker.alreadyRegistered = true; renderResults(lastResults); }
+        else { results.innerHTML = ''; searchHint.textContent = 'Start typing a name to search the roster.'; }
+        searchInput.value = ''; searchInput.focus();
+      } else {
+        showToast('❌ ' + (res.error || 'Registration was not confirmed.'), 'err');
+        if (res.duplicate && worker) { worker.alreadyRegistered = true; renderResults(lastResults); }
+      }
+    } catch (err) {
+      showToast('❌ Registration was not confirmed. Check your connection.', 'err');
+    } finally { btn.disabled = false; btn.textContent = 'Register'; }
+  }
+
+  const toast = document.getElementById('toast');
+  let toastTimer = null;
+  function showToast(text, type) {
+    clearTimeout(toastTimer);
+    toast.textContent = text;
+    toast.className = 'toast ' + type;
+    toastTimer = setTimeout(() => { toast.className = 'toast'; }, 3500);
+  }
+</script>
+</body>
+</html>

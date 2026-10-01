@@ -1,1 +1,1 @@
-# October-Rally
+# AVS-Rally
