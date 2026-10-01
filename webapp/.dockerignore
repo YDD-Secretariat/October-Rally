@@ -1,0 +1,14 @@
+node_modules
+.next
+.next-test
+data
+.git
+.gitignore
+*.log
+.env
+.env*.local
+npm-debug.log*
+Dockerfile
+.dockerignore
+README.md
+tests

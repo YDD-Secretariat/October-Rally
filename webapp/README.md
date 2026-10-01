@@ -52,6 +52,33 @@ npm start        # http://localhost:3100
 > the directory named by `RALLY_DATA_DIR` (default `./data`) — that path must be
 > on the persistent volume and must survive redeploys.
 
+### Deploying
+
+Two ready-made paths (both validated):
+
+**A. Render (one blueprint).** [`render.yaml`](render.yaml) defines a web service
+with a 1 GB persistent disk at `/data`. In Render: **New → Blueprint → pick this
+repo**. It generates `RALLY_AUTH_SECRET` for you; set `RALLY_PASSCODE` in the
+dashboard. (A persistent disk needs a paid instance type — the free tier has
+none.) Railway/Fly.io are similar: root dir `webapp`, build `npm ci && npm run
+build`, start `npm start`, attach a volume mounted where `RALLY_DATA_DIR` points.
+
+**B. Docker (any VM).** [`Dockerfile`](Dockerfile) builds the app; run it with a
+mounted volume and your env:
+
+```bash
+docker build -t october-rally ./webapp
+docker run -d --name october-rally -p 80:3100 \
+  -e RALLY_PASSCODE='your-event-passcode' \
+  -e RALLY_AUTH_SECRET="$(openssl rand -hex 32)" \
+  -v october-rally-data:/data \
+  october-rally
+```
+
+The container honours the platform's `$PORT` and stores all data on the `/data`
+volume (DB, uploads, rotating backups) — verified to survive container restarts.
+Terminate TLS with the host's load balancer or a reverse proxy in front.
+
 ### Environment variables
 
 Copy `.env.example` → `.env.local` (dev) or set these in your host:

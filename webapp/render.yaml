@@ -1,0 +1,29 @@
+# Render Blueprint — deploy the October Rally app with a persistent disk.
+# In Render: New → Blueprint → point at this repo. A persistent disk requires a
+# paid instance type (Starter or higher); the free tier has no persistent disk.
+services:
+  - type: web
+    name: october-rally
+    runtime: node
+    rootDir: webapp
+    plan: starter
+    region: frankfurt
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /login
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: RALLY_DATA_DIR
+        value: /data
+      # Signing secret for the auth cookie — generated once by Render.
+      - key: RALLY_AUTH_SECRET
+        generateValue: true
+      # The shared event passcode — set this yourself in the Render dashboard.
+      - key: RALLY_PASSCODE
+        sync: false
+    disk:
+      name: rally-data
+      mountPath: /data
+      sizeGB: 1
