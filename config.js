@@ -1,5 +1,5 @@
 // October Rally 2026 — server-confirmed API. Keep your existing /exec URL here.
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwl_F2578W7aFxNS3Npe55Fd7ogmZZ6l4pUje_Lwo1IZNkhCdfXA0_h6xIV2FFFnudz/exec";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzQlvK0M-rvpSn-B6cLw2hwb0f9PhRkJiQpy6kq8B8u98x-MnDmg1Z4zfG0VlrrFxDs/exec";
 const QUEUE_KEY = 'avs_offline_queue_v1';
 const STATION_KEY = 'avs_station';
 const AVS = {
