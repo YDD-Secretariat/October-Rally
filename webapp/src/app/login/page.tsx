@@ -40,7 +40,7 @@ function LoginForm() {
   return (
     <form className="card w-full max-w-sm p-6" onSubmit={submit}>
       <div className="mb-4 flex items-center gap-3">
-        <span className="grid h-10 w-10 place-items-center rounded-xl bg-brand-600 text-white">
+        <span className="grid h-10 w-10 place-items-center rounded-xl bg-[#1a1a1a] text-white">
           <Lock size={20} />
         </span>
         <div>

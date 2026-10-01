@@ -122,7 +122,7 @@ export default function UploadPage() {
           )}
           <div className="divide-y divide-[var(--border)] overflow-hidden rounded-2xl border border-[var(--border)] bg-white">
             {matches.map((s) => (
-              <button key={s.id} className="block w-full px-4 py-3.5 text-left hover:bg-brand-50" onClick={() => { setSelected(s); setPending([]); setMsg(null); }}>
+              <button key={s.id} className="block w-full px-4 py-3.5 text-left hover:bg-[var(--accent-weak)]" onClick={() => { setSelected(s); setPending([]); setMsg(null); }}>
                 <div className="font-bold text-slate-900">{s.schoolName}</div>
                 <div className="text-xs text-slate-500">
                   {s.location ? `${s.location} · ` : ""}Coordinator: {s.coordinatorName || "—"} · {s.total} students
@@ -133,17 +133,17 @@ export default function UploadPage() {
         </>
       ) : (
         <>
-          <div className="mb-4 flex items-center justify-between rounded-2xl border border-brand-200 bg-brand-50 px-4 py-3.5">
+          <div className="mb-4 flex items-center justify-between rounded-2xl border border-[var(--border)] bg-[var(--accent-weak)] px-4 py-3.5">
             <div>
-              <div className="text-xs text-slate-500">Uploading sheets for</div>
-              <b className="text-brand-700">{selected.schoolName}</b>
+              <div className="text-xs text-[var(--muted)]">Uploading sheets for</div>
+              <b className="text-[var(--text)]">{selected.schoolName}</b>
             </div>
-            <button className="text-sm font-bold text-brand-600 underline" onClick={() => { setSelected(null); setQuery(""); setPending([]); }}>
+            <button className="text-sm font-semibold text-[var(--text)] underline" onClick={() => { setSelected(null); setQuery(""); setPending([]); }}>
               Change school
             </button>
           </div>
 
-          <div className="mb-4 rounded-2xl border-2 border-dashed border-brand-200 bg-white p-5 text-center">
+          <div className="mb-4 rounded-2xl border-2 border-dashed border-[var(--border)] bg-white p-5 text-center">
             <span className="pill mb-2 inline-flex items-center gap-1 bg-green-100 text-green-700"><Zap size={12} /> Auto-compression on</span>
             <p className="mb-4 text-sm text-slate-500">Take photo(s) of the attendance sheet or choose from your gallery. High-res images are compressed automatically.</p>
             <div className="flex gap-2.5">
@@ -179,7 +179,7 @@ export default function UploadPage() {
             </div>
           )}
 
-          <button className="btn-primary btn-block !bg-green-600 hover:!bg-green-700" disabled={!canUpload || busy} onClick={upload}>
+          <button className="btn-primary btn-block" disabled={!canUpload || busy} onClick={upload}>
             {busy ? "Uploading…" : "Upload Photo(s)"}
           </button>
           {msg && <Message kind={msg.kind}>{msg.text}</Message>}

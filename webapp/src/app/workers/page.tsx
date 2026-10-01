@@ -108,7 +108,7 @@ export default function WorkersIndividualPage() {
         ))}
       </div>
 
-      <button className="btn-ghost btn-block mt-5 border-dashed !border-brand-300 !text-brand-700" onClick={() => setSheet({ worker: null })}>
+      <button className="btn-ghost btn-block mt-5 border-dashed" onClick={() => setSheet({ worker: null })}>
         <UserPlus size={18} /> Not on the roster? Add a new person
       </button>
 
