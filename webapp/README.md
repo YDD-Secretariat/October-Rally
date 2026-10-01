@@ -91,6 +91,30 @@ Copy `.env.example` → `.env.local` (dev) or set these in your host:
 | `RALLY_BACKUP_MINUTES` | Auto-backup interval. Default 15 in production, off in dev. |
 | `RALLY_BACKUP_KEEP` | How many rotating backups to retain. Default 48. |
 
+## Migrating existing data from the Google Sheet
+
+The old static app stored its data behind a Google Apps Script endpoint. To seed
+this database with the current live counts before going live:
+
+```bash
+npm run db:import              # imports into empty tables (safe; refuses if data exists)
+npm run db:import -- --force   # clears & re-imports the migrated tables
+```
+
+It pulls schools, bulk members, visitors, and the bulk worker/minister total
+(individual worker rows can't be migrated — the legacy backend lists no endpoint
+for them) and prints a grand-total summary you can reconcile against the sheet.
+Override the source with `RALLY_IMPORT_URL`. Run it on the server (with
+`RALLY_DATA_DIR` set) right before launch so the first page load shows real
+numbers.
+
+## Attendance-sheet photos
+
+Uploaded sheets are stored on the data volume and viewable from the dashboard:
+open a school in the **Schools Registered** table and its photos appear as
+thumbnails in the detail panel (click to open full size). Served by
+`GET /api/photos/:id` (auth-gated, path-guarded to the uploads directory).
+
 ## Production hardening (built in)
 
 - **Idempotent writes** — each submission carries a `clientRequestId`; a retry

@@ -14,6 +14,7 @@ export default function DashboardPage() {
   const [offline, setOffline] = useState(false);
   const [search, setSearch] = useState("");
   const [detail, setDetail] = useState<SchoolRow | null>(null);
+  const [detailPhotos, setDetailPhotos] = useState<{ id: number; fileName: string }[]>([]);
   const lastHash = useRef("");
 
   const refresh = useCallback(async () => {
@@ -47,6 +48,21 @@ export default function DashboardPage() {
       document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [refresh]);
+
+  // Load attendance-sheet photos when a school detail opens.
+  useEffect(() => {
+    if (!detail || !detail.photoCount) {
+      setDetailPhotos([]);
+      return;
+    }
+    let active = true;
+    apiGet<{ photos: { id: number; fileName: string }[] }>("/api/photos", { schoolId: detail.id })
+      .then((r) => active && setDetailPhotos(r.photos || []))
+      .catch(() => active && setDetailPhotos([]));
+    return () => {
+      active = false;
+    };
+  }, [detail]);
 
   const s = data?.summary;
   const stats = data?.stats;
@@ -256,6 +272,25 @@ export default function DashboardPage() {
             <DetailRow label="Registered" value={dateTime(detail.createdAt)} />
             <DetailRow label="Photos uploaded" value={fmt(detail.photoCount)} />
           </div>
+          {detailPhotos.length > 0 && (
+            <div className="mt-4">
+              <div className="mb-2 text-[13px] font-semibold text-[var(--muted)]">Attendance sheets</div>
+              <div className="grid grid-cols-3 gap-2">
+                {detailPhotos.map((p) => (
+                  <a
+                    key={p.id}
+                    href={`/api/photos/${p.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block aspect-square overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--accent-weak)]"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={`/api/photos/${p.id}`} alt={p.fileName} className="h-full w-full object-cover" loading="lazy" />
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
           <button className="btn-primary btn-block mt-4" onClick={() => setDetail(null)}>Close</button>
         </BottomSheet>
       )}

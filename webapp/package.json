@@ -8,6 +8,7 @@
     "start": "next start -p ${PORT:-3100}",
     "lint": "next lint",
     "db:seed": "tsx src/db/seed.ts",
+    "db:import": "tsx src/db/import-sheet.ts",
     "db:backup": "tsx src/db/backup-cli.ts",
     "test": "bash tests/run.sh"
   },
